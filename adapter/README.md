@@ -69,16 +69,20 @@ define('DEFAULT_ADAPTER_CONFIGS', json_encode(
     array(
         'ftp'=>array(
             'default'=>array(
-                'host'=>'127.0.01', 
+                'host'=>'127.0.0.1', 
                 'port'=>'21', 
                 'user'=>'user', 
                 'pass'=>'user123'
             )
         ),
+        // 如果安装的是memcached，而且有设置帐号，密码, 设置'memcached'=>true,（默认为：false） 
         'memcache'=>array(
             'default'=>array(
-                'host'=>'127.0.01', 
+                'host'=>'127.0.0.1', 
                 'port'=>'11211', 
+                'memcached'=>true,
+                'user'=>'',
+                'pass'=>''
             )   
         )
     )   
