@@ -31,6 +31,7 @@ Doba框架提供了网站运行的基本骨架，更多更新的功能，需要�
 |   |   |   |-FtpAdapter.php
 |   |   |   |-IAdapter.php
 |   |   |   |-MemcacheAdapter.php
+|   |   |   |-QueueAdapter.php
 ```
 
 2 设置配置参数
@@ -50,13 +51,15 @@ public function setAdapterConfigs() {
     if(defined('DEFAULT_ADAPTER_CONFIGS')) {
         $this->adapterConfigs = json_decode(DEFAULT_ADAPTER_CONFIGS, true);
     } else {
+        $this->setRedisConfigs();
         $this->adapterConfigs = array(
             'ftp'=>array(
                 'default'=>array('host'=>'127.0.0.1', 'port'=>'21', 'user'=>'root', 'pass'=>'')
             ),
             'memcache'=>array(
                 'default'=>array('host'=>'127.0.0.1', 'port'=>'11211', 'memcached'=>false, 'user'=>'root', 'pass'=>'')
-            )
+            ),
+            'queue'=>$this->redisConfigs
         );
     }
 }
@@ -65,6 +68,8 @@ public function setAdapterConfigs() {
 可以在 [项目]/common/config/varconfig.php 中定义重置方法， 例如:
 
 ```
+// 如果用到队列，请先定义redis的链接
+
 define('DEFAULT_ADAPTER_CONFIGS', json_encode(
     array(
         'ftp'=>array(
@@ -84,7 +89,8 @@ define('DEFAULT_ADAPTER_CONFIGS', json_encode(
                 'user'=>'',
                 'pass'=>''
             )   
-        )
+        ),
+        'queue'=>json_decode(REDIS_CONFIGS, true)
     )   
 ));
 ```
@@ -131,4 +137,36 @@ $ftp->get(__DIR__.'/1.txt', 'abc/2.txt');
 
 // 删除文件
 $ftp->del('abc/2.txt');
+```
+
+
+3 Queue调用
+
+这里的队列，使用了Redis做为底层
+
+```
+$queue = $GLOBALS['plugin']->call('adapter', 'core', array('name'=>'queue'));
+
+// 清除队列
+$queue->clear('TEST');
+
+// 向队列里添加数据（插入队列数据时，默认加字字段:TimePutInQueue, 用于记录插入队列的时间点）
+for($i=0; $i<5; $i++) {
+    $queue->put('TEST', "data-{$i}");
+}
+
+// 获取队列里的数据(注册返回是数组格式)
+print_r($queue->get('TEST'));
+
+// 获取队列状态
+echo $queue->status_normal('TEST');
+
+返加内容如下：
+Redis Message Queue
+-------------------
+Message queue name:TEST
+Put position of queue:0
+Get position of queue:0
+Number of unread queue:0
+
 ```
