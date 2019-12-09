@@ -145,19 +145,64 @@ class FtpAdapter extends IAdapter {
 
     /**
      * http://php.net/manual/en/wrappers.ftp.php
-     * 方法：判断远程目录是否存在(code:17)
+     * 以下注释的两个方法(isdir, isfile)在有些条件下，是能正常执行的。但有不能生效的情况。
+     * 方法：判断远程目录是否存在
      * @param $path 路径
      */
-    public function isdir($path) {
-        return is_dir("ftp://{$this->user}:{$this->pass}@{$this->host}:{$this->port}/{$path}");
-    }
-
+    // public function isdir($path) {
+    //     return is_dir("ftp://{$this->user}:{$this->pass}@{$this->host}:{$this->port}/{$path}");
+    // }
     /**
-     * 方法：判断远程文件是否存在(code:18)
+     * 方法：判断远程文件是否存在
      * @param $file 文件全路径
      */
-    public function isfile($file) {
-        return is_file("ftp://{$this->user}:{$this->pass}@{$this->host}:{$this->port}/{$file}");
+    // public function isfile($file) {
+    //     return is_file("ftp://{$this->user}:{$this->pass}@{$this->host}:{$this->port}/{$file}");
+    // }
+
+    public function isdir($path)
+    {
+        $path = preg_replace('/^\//', '', $path);
+        $name = basename($path); $path = dirname($path);
+        $files = $this->scandir($path);
+        if(is_array($files)) 
+            foreach($files as $fname => $data) {
+            if($fname == $name) {
+                return ($data['type'] == 'directory') ? true : false;
+            }
+        }
+        return false;
+    }
+
+    public function isfile($path)
+    {
+        $path = preg_replace('/^\//', '', $path);
+        $name = basename($path); $path = dirname($path);
+        $files = $this->scandir($path);
+        if(is_array($files)) 
+            foreach($files as $fname => $data){
+            if($fname == $name) {
+                return ($data['type'] == 'file') ? true : false;
+            }
+        }
+        return false;
+    }
+
+    private function scandir($path) {
+        $this->connect();
+        if(! $path) $path = "."; 
+        if(is_array($children = @ftp_rawlist($this->conn, $path))){
+            $items = array();
+            foreach($children as $name => $child){
+                $chunks = preg_split("/\s+/", $child);
+                list($item['rights'], $item['number'], $item['user'], $item['group'], $item['size'], $item['month'], $item['day'], $item['time']) = $chunks;
+                $item['type'] = $chunks[0]{0} === 'd' ? 'directory' : 'file';
+                array_splice($chunks, 0, 8);
+                $items[implode(" ", $chunks)] = $item;
+            }
+            return $items;
+        }
+        return false;
     }
   
     /** 
