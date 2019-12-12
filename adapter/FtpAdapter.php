@@ -34,7 +34,7 @@ class FtpAdapter extends IAdapter {
     {
         if($this->conn) return true;
         $this->conn = ftp_connect($this->host, $this->port);
-        if(! $this->conn) throw new \Exception("FTP server connection failed", 98021001); 
+        if(! $this->conn) throw new \Exception("FTP server connection failed"); 
         if(! @ftp_login($this->conn, $this->user,$this->pass)) throw new \Exception("FTP server login failed");
         @ftp_pasv($this->conn, 1); // 打开被动模拟  
     }
