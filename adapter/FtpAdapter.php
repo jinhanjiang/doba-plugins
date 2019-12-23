@@ -121,26 +121,32 @@ class FtpAdapter extends IAdapter {
     public function mkdirs($path)
     {  
         $this->connect();
-        $path_arr  = explode('/', $path);// 取目录数组  
-        $file_name = array_pop($path_arr);// 弹出文件名  
-        $path_div  = count($path_arr);// 取层数  
+        // 取目录数组  
+        $paths  = explode('/', $path); array_pop($paths);// 弹出文件名  
   
-        $new_path = '';
-        foreach($path_arr as $key=>$val)// 创建目录
-        {  
-            $new_path .= (0==$key?'':'/').$val;
-            if(! $this->isdir($new_path))  
-            {  
-                $tmp = @ftp_mkdir($this->conn, $val);  
-                if($tmp === FALSE) {  
+        $newpath = implode('/', $paths);
+        if($this->isdir($newpath)) return true;
+
+        $newpath = ''; $chdirs = array();
+        foreach($paths as $idx => $ph)
+        {
+            $newpath .= (0 == $idx ? '' : '/').$ph;
+            if(! $this->isdir($newpath))
+            {
+                foreach($chdirs as $chdir) {
+                    @ftp_chdir($this->conn, $chdir);
+                }
+                $mkflag = @ftp_mkdir($this->conn, $ph);  
+                if($mkflag === FALSE) {  
                     throw new \Exception("Directory creation failed, please check the permissions and path is correct!");
                 }  
-            }  
-            @ftp_chdir($this->conn, $val);  
-        }  
-        for($i=1; $i <= $path_div; $i++) { // 回退到根  
-            @ftp_cdup($this->conn);  
-        }  
+                for($i = 0; $i < count($chdirs); $i ++) {
+                    @ftp_cdup($this->conn);
+                }
+            }
+            $chdirs[] = $ph;
+        }
+        return true;
     }    
 
     /**
