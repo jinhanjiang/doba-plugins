@@ -93,7 +93,7 @@ class MemcacheAdapter extends IAdapter {
      */
     public function close() {
         if($this->conn) {
-           $this->conn->close();  $this->conn = null;
+           $this->isMemcached ? $this->conn->quit() : $this->conn->close();  $this->conn = null;
         }
     }
 
