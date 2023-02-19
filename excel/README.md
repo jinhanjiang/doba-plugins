@@ -8,6 +8,8 @@ https://github.com/PHPOffice/PHPExcel/releases
 
 ### 下载第三方代码
 
+php版本小于php7.4版本的使用下面，可使用下面方式
+
 例如：我们下载PHPExcel-1.8.2.tar.gz , 解压后将Classes/下的所有拷贝到[项目]/common/plugin/excel/, 结构如下
 
 ```
@@ -33,6 +35,19 @@ https://github.com/PHPOffice/PHPExcel/releases
 |   |   |   |
 |   |   |   |-PHPExcel.php
 ```
+
+php版本7.4以下版本使用config2.php方式
+
+其中需要引入官方扩展，在doba同级目录执行
+```
+composer require phpoffice/phpspreadsheet:~1.23
+```
+在common/config/config.php文件中require(ROOT_PATH.'doba/autoload.php');下添加以下引用即可使用
+```
+require(ROOT_PATH.'vendor/autoload.php');
+```
+
+
 
 # 用法
 
