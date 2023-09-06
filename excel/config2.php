@@ -1,6 +1,9 @@
 <?php
 use Doba\Util;
 
+use Doba\Plugin\Excel\Helper\PHPExcelReadFilter;
+use Doba\Plugin\Excel\Helper\XLSXWriter;
+
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Settings;
@@ -12,8 +15,6 @@ use PhpOffice\PhpSpreadsheet\Cell\Hyperlink;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
-require_once(__DIR__.'/PHPExcelReadFilter.php');
-
 class ExcelPlugin extends BasePlugin {
     
     public function __construct(&$plugin){ 
@@ -21,7 +22,6 @@ class ExcelPlugin extends BasePlugin {
     }
 
     public function getXlsxWriter() {
-        require_once(__DIR__.'/XLSXWriter.php');
         return new XLSXWriter();
     }
 
@@ -75,7 +75,7 @@ class ExcelPlugin extends BasePlugin {
      */
     public function read($params = array())
     {
-        $filepath = $params['file']; 
+        $filepath = $params['filename']; 
         
         $fields = is_array($params['fields']) ? $params['fields'] : array(); 
         $types = is_array($params['types']) ? $params['types']: array();
@@ -90,7 +90,6 @@ class ExcelPlugin extends BasePlugin {
 
         $iputFileType = IOFactory::identify($filepath);
         $objReader = IOFactory::createReader($iputFileType);
-        $objReader->setReadDataOnly(true);
 
         if(is_callable($options['pagination']['callback']))
         {
@@ -105,12 +104,12 @@ class ExcelPlugin extends BasePlugin {
 
             for(; ;$start += $perpage)
             {
-                $perf = new \PHPExcelReadFilter();
+                $perf = new PHPExcelReadFilter();
                 $perf->setRows($start, $perpage);
                 $objReader->setReadFilter($perf);
 
                 $objPHPExcel = $objReader->load($filepath);
-                $endRow = $objPHPExcel->getActiveSheet()->getHighestRow();//行
+                $endRow = $objPHPExcel->getActiveSheet()->getHighestDataRow();//行
                 $startRow = $start;
 
                 if($start > 1 && $endRow == 1) break;
@@ -158,7 +157,7 @@ class ExcelPlugin extends BasePlugin {
             return $this->parseRow(
                 array(
                     'startRow'=>$startRow,
-                    'endRow'=>$objPHPExcel->getActiveSheet()->getHighestRow(),
+                    'endRow'=>$objPHPExcel->getActiveSheet()->getHighestDataRow(),
                     'types'=>$types,
                     'options'=>$options,
                     'objPHPExcel'=>$objPHPExcel,
@@ -175,9 +174,9 @@ class ExcelPlugin extends BasePlugin {
     private function checkTitleRow($params)
     {
         if(! is_array($params['fields']) || count($params['fields']) == 0) return 1;
-        $endRow = $params['objPHPExcel']->getActiveSheet()->getHighestRow();//行
+        $endRow = $params['objPHPExcel']->getActiveSheet()->getHighestDataRow();//行
         if($endRow < 1) throw new \Exception("Row is empty");
-        $column = $params['objPHPExcel']->getActiveSheet()->getHighestColumn();//如果有两列，则显示B
+        $column = $params['objPHPExcel']->getActiveSheet()->getHighestDataColumn();//如果有两列，则显示B
         $allColumn = $this->getNumbersFromAlpha($column);//第一列为0
         //判断标题行是否一致
         for($i = 0 ; $i <= $allColumn; $i ++)
@@ -185,7 +184,7 @@ class ExcelPlugin extends BasePlugin {
             $current = $this->makeAlphaFromNumbers($i).'1';
             $data = $params['objPHPExcel']->getActiveSheet()->getCell($current)->getValue() ;
             if(strtolower(trim($data)) != strtolower(trim($params['fields'][$i]))) {
-                throw new \Exception("The title row is wrong");
+                throw new \Exception("The title row is wrong ({$data})-({$params['fields'][$i]})");
             }
         }
         return 2;
@@ -198,7 +197,7 @@ class ExcelPlugin extends BasePlugin {
     private function parseRow($params)
     {
         $datas = array();
-        $column = $params['objPHPExcel']->getActiveSheet()->getHighestColumn();//如果有两列，则显示B
+        $column = $params['objPHPExcel']->getActiveSheet()->getHighestDataColumn();//如果有两列，则显示B
         $allColumn = $this->getNumbersFromAlpha($column);//第一列为0
 
         for(; $params['startRow'] <= $params['endRow']; $params['startRow'] ++)
@@ -466,18 +465,18 @@ class ExcelPlugin extends BasePlugin {
         $allRow = $allColumn = 0;
         for($start = 1, $perpage = 10000; ;$start += $perpage)
         {
-            $perf = new \PHPExcelReadFilter();
+            $perf = new PHPExcelReadFilter();
             $perf->setRows($start, $perpage);
             $objReader->setReadFilter($perf);
 
             $objPHPExcel = $objReader->load($file);
-            $endRow = $objPHPExcel->getActiveSheet()->getHighestRow();//行
+            $endRow = $objPHPExcel->getActiveSheet()->getHighestDataRow();//行
 
             if($start > 1 && $endRow == 1) break;
             $allRow = $endRow < $perf->endRow ? $endRow : $perf->endRow;
 
             if($start == 1) {//取得一共有多少列
-                $column = $objPHPExcel->getActiveSheet()->getHighestColumn();//如果有两列，则显示B
+                $column = $objPHPExcel->getActiveSheet()->getHighestDataColumn();//如果有两列，则显示B
                 $allColumn = $this->getNumbersFromAlpha($column);//第一列为0
             }
             $objPHPExcel->disconnectWorksheets(); unset($objPHPExcel);
