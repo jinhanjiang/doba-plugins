@@ -1,8 +1,11 @@
 <?php
+
+namespace Doba\Plugin;
+
 use Doba\Util;
 
-use Doba\Plugin\Excel\Helper\PHPExcelReadFilter;
-use Doba\Plugin\Excel\Helper\XLSXWriter;
+use Doba\Plugin\Excel\PHPExcelReadFilter;
+use Doba\Plugin\Excel\XLSXWriter;
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\IOFactory;
